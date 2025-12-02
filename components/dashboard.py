@@ -63,22 +63,3 @@ def show():
         
         st.divider()
         
-        # Recent Transactions
-        st.subheader("📝 Recent Transactions")
-        transactions = db["transactions"]
-        recent = list(transactions.find({"center_id": center_id}).sort("_id", -1).limit(5))
-        
-        if recent:
-            for trans in recent:
-                with st.container(border=True):
-                    col1, col2, col3 = st.columns([2, 2, 1])
-                    with col1:
-                        st.write(f"**Item**: {trans.get('item_name', 'N/A')}")
-                    with col2:
-                        st.write(f"**Quantity**: {trans.get('quantity', 0)}")
-                    with col3:
-                        st.write(f"**Date**: {trans.get('date', 'N/A')}")
-        else:
-            st.info("No transactions yet")
-    else:
-        st.error("Center not found")

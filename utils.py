@@ -6,10 +6,18 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 import uuid
+from streamlit_cookies_controller import CookieController
 
 load_dotenv()
 
 MONGODB_URI = os.getenv("MONGODB_URI")
+
+COOKIE_PREFIX = "helpkart"
+
+def get_cookie_controller():
+    # Use a fixed key so the component is stable across reruns
+    return CookieController(key="helpkart_cookies")
+
 
 @st.cache_resource
 def get_mongo_client():

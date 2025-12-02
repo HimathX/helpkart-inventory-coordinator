@@ -1,7 +1,10 @@
 import streamlit as st
-from utils import get_database, hash_password, verify_password, init_session_state
+from utils import get_database, hash_password, verify_password, init_session_state, get_cookie_controller, COOKIE_PREFIX
 import uuid
 from datetime import datetime
+from bson.objectid import ObjectId
+import time
+
 
 # Configure page
 st.set_page_config(
@@ -10,6 +13,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
 
 # Custom CSS
 st.markdown("""
@@ -38,17 +42,75 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+
 # Initialize session state
 init_session_state()
 
+
+# Initialize controller with a container to hide it
+controller = get_cookie_controller()
+with st.container(height=1, border=False):
+    st.html("<style>div[style*='height: 1px']{display:none;}</style>")
+
+
+def try_auto_login_from_cookie():
+    """Auto-login from cookies if available"""
+    # If already logged in, nothing to do
+    if st.session_state.get("logged_in"):
+        return
+
+    # Small delay to let cookie component initialize
+    time.sleep(0.5)
+    
+    try:
+        cookies = controller.getAll()
+        center_id_cookie = cookies.get(f"{COOKIE_PREFIX}_center_id")
+        email_cookie = cookies.get(f"{COOKIE_PREFIX}_email")
+
+        if not center_id_cookie or not email_cookie:
+            return
+
+        db = get_database()
+        if db is None:
+            return
+
+        centers = db["centers"]
+        try:
+            center = centers.find_one({"_id": ObjectId(center_id_cookie)})
+        except Exception:
+            return
+
+        if not center:
+            return
+
+        # Rehydrate session_state
+        st.session_state.logged_in = True
+        st.session_state.center_id = str(center["_id"])
+        st.session_state.center_name = center["center_name"]
+        st.session_state.center_email = center["email"]
+        
+    except Exception as e:
+        # Silently fail - cookies might not be ready yet
+        pass
+
+
+# Call auto-login
+try_auto_login_from_cookie()
+
+
 # Logout function
 def logout():
+    controller = get_cookie_controller()
+    controller.remove(f"{COOKIE_PREFIX}_center_id")
+    controller.remove(f"{COOKIE_PREFIX}_email")
+
     st.session_state.logged_in = False
     st.session_state.center_id = None
     st.session_state.center_name = None
     st.session_state.center_email = None
-    st.session_state.page = 'login'
+    st.session_state.page = "login"
     st.rerun()
+
 
 # Main app
 if not st.session_state.logged_in:
@@ -76,7 +138,13 @@ if not st.session_state.logged_in:
                             st.session_state.center_name = user["center_name"]
                             st.session_state.center_email = user["email"]
                             st.session_state.page = 'dashboard'
+
+                            # Set cookies with 7-day expiry
+                            controller.set(f"{COOKIE_PREFIX}_center_id", str(user["_id"]), max_age=7 * 24 * 60 * 60)
+                            controller.set(f"{COOKIE_PREFIX}_email", user["email"], max_age=7 * 24 * 60 * 60)
+
                             st.success("Login successful! Redirecting...")
+                            time.sleep(0.5)  # Wait for cookies to sync
                             st.rerun()
                         else:
                             st.error("Invalid email or password")
@@ -132,8 +200,7 @@ if not st.session_state.logged_in:
                                 result = users.insert_one(center_data)
                                 st.success("Account created successfully! Please login.")
                                 st.info("Redirecting to login page...")
-                else:
-                    st.warning("Please fill in all fields")
+
 
 else:
     # Sidebar navigation
@@ -143,7 +210,7 @@ else:
         
         page = st.radio(
             "Navigation",
-            ["Dashboard", "My Inventory", "My Requests", "Browse Items", "Transactions", "Settings"],
+            ["Dashboard", "My Inventory", "My Requests", "Browse Items", "Settings"],
             key="sidebar_nav"
         )
         
@@ -153,20 +220,17 @@ else:
     
     # Route to pages based on selection
     if page == "Dashboard":
-        from pages import dashboard
+        from components import dashboard
         dashboard.show()
     elif page == "My Inventory":
-        from pages import inventory
+        from components import inventory
         inventory.show()
     elif page == "My Requests":
-        from pages import requests
+        from components import requests
         requests.show()
     elif page == "Browse Items":
-        from pages import browse
+        from components import browse
         browse.show()
-    elif page == "Transactions":
-        from pages import transactions
-        transactions.show()
     elif page == "Settings":
-        from pages import settings
+        from components import settings
         settings.show()
