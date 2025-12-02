@@ -1,56 +1,7 @@
 import streamlit as st
-from pymongo import MongoClient
-from pymongo.server_api import ServerApi
-import bcrypt
-import os
-from datetime import datetime
-from dotenv import load_dotenv
+from utils import get_database, hash_password, verify_password, init_session_state
 import uuid
-
-# Load environment variables
-load_dotenv()
-
-# MongoDB connection
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority")
-
-@st.cache_resource
-def get_mongo_client():
-    """Create and cache MongoDB connection"""
-    try:
-        client = MongoClient(MONGODB_URI, server_api=ServerApi('1'), tls=True, tlsAllowInvalidCertificates=False)
-        client.admin.command('ping')
-        return client
-    except Exception as e:
-        st.error(f"Failed to connect to MongoDB: {e}")
-        return None
-
-def get_database():
-    """Get the helpkart database"""
-    client = get_mongo_client()
-    if client:
-        return client["helpkart_db"]
-    return None
-
-def hash_password(password):
-    """Hash password using bcrypt"""
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-def verify_password(password, hashed):
-    """Verify password against hash"""
-    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
-
-def init_session_state():
-    """Initialize session state variables"""
-    if 'logged_in' not in st.session_state:
-        st.session_state.logged_in = False
-    if 'center_id' not in st.session_state:
-        st.session_state.center_id = None
-    if 'center_name' not in st.session_state:
-        st.session_state.center_name = None
-    if 'center_email' not in st.session_state:
-        st.session_state.center_email = None
-    if 'page' not in st.session_state:
-        st.session_state.page = 'login'
+from datetime import datetime
 
 # Configure page
 st.set_page_config(
@@ -115,7 +66,7 @@ if not st.session_state.logged_in:
             if st.button("Login", use_container_width=True, key="login_btn"):
                 if email and password:
                     db = get_database()
-                    if db:
+                    if db is not None:
                         users = db["centers"]
                         user = users.find_one({"email": email})
                         
@@ -154,7 +105,7 @@ if not st.session_state.logged_in:
                         st.error("Password must be at least 6 characters")
                     else:
                         db = get_database()
-                        if db:
+                        if db is not None:
                             users = db["centers"]
                             
                             # Check if email already exists
