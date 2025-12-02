@@ -36,7 +36,7 @@ Generated exports are saved to the `exports/` folder. These JSON exports can be 
 
 ---
 
-## 🤝 Contributing
+## 🚀 Quick Start
 
 ### Prerequisites
 
