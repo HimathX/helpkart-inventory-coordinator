@@ -1,3 +1,10 @@
+name: 📊 Compile Helpkart Data
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
 jobs:
   compile:
     runs-on: ubuntu-latest
