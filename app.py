@@ -182,7 +182,6 @@ if not st.session_state.logged_in:
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
         st.markdown('<div class="login-header">📋 Create Account</div>', unsafe_allow_html=True)
         st.markdown('<div class="login-subheader">Join Helpkart today</div>', unsafe_allow_html=True)
-        st.markdown('<div class="login-form">', unsafe_allow_html=True)
         
         center_name = st.text_input("Center Name", placeholder="Enter center name")
         email = st.text_input("Email Address", key="signup_email", placeholder="your@email.com")
