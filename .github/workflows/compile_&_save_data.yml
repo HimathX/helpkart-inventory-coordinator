@@ -1,4 +1,4 @@
-name: 📊 Compile Helpkart Data
+name: 📊 Compile and Save Helpkart Data
 
 on:
   schedule:
