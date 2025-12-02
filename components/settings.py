@@ -33,7 +33,6 @@ def show():
         
         if center:
             # Optional: small summary card at top
-            st.markdown(f"**Center ID:** {center.get('center_id', 'N/A')}")
             st.markdown(f"**Status:** {center.get('status', 'N/A')}")
             st.divider()
 
