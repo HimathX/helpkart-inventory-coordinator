@@ -2,8 +2,8 @@ name: 📊 Compile Helpkart Data
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # Every 5 minutes
-  workflow_dispatch:      # Also allow manual trigger
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
 
 jobs:
   compile:
@@ -28,9 +28,7 @@ jobs:
         run: python scripts/compile_data.py
       
       - name: Commit and push
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add exports/
-          git commit -m "📊 Auto-compiled data at $(date)" || true
-          git push
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "📊 Auto-compiled data"
+          file_pattern: "exports/"
