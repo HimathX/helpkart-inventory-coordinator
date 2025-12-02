@@ -2,7 +2,7 @@ name: 📊 Compile Helpkart Data
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/5 * * * *'   # every 5 minutes
   workflow_dispatch:
 
 jobs:
@@ -12,8 +12,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -29,12 +27,9 @@ jobs:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
         run: python scripts/compile_data.py
       
-      - name: Commit and push
-        uses: stefanzweifel/git-auto-commit-action@v4
+      - name: Upload JSON exports as artifact
+        uses: actions/upload-artifact@v3
         with:
-          commit_message: "📊 Auto-compiled data"
-          file_pattern: "exports/"
-          commit_user_name: "GitHub Actions Bot"
-          commit_user_email: "actions@github.com"
-          skip_fetch: false
-          skip_checkout: false
+          name: helpkart-exports
+          path: exports/
+          retention-days: 7   # keep for 7 days (you can change)
