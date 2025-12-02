@@ -23,9 +23,20 @@ Helpkart is a web-based platform designed for disaster relief and humanitarian o
 | ⚙️ **Settings** | Manage center profile and account preferences |
 
 
+
+## ⚙️ CI / Workflows
+
+This repository includes CI workflows under the `.github/workflows/` directory.
+
+- `compile_data.yml` — compiles or prepares dataset(s) used by the app.
+- `compile_&_save_data.yml` — runs compilation and saves a snapshot/export into the `exports/` folder (example: `helpkart_export_20251202_091905.json`).
+
+
+Generated exports are saved to the `exports/` folder. These JSON exports can be used to seed local development, inspect sample data, or archive snapshots of compiled data.
+
 ---
 
-## 🚀 Quick Start
+## 🤝 Contributing
 
 ### Prerequisites
 
@@ -134,25 +145,7 @@ helpkart-inventory-coordinator/
    - Click **Deploy**
    - Your app will be live at `https://your-app.streamlit.app`
 
-### Performance Optimization
 
-Create these MongoDB indexes for faster queries:
-
-```javascript
-// In MongoDB Atlas → Database → Collections → Indexes
-
-// Centers - Fast email lookup for login
-db.centers.createIndex({ "email": 1 }, { unique: true })
-
-// Inventory - Filter by center and surplus status
-db.inventory.createIndex({ "center_id": 1 })
-
-// Requests - Find unfulfilled requests efficiently
-db.requests.createIndex({ "center_id": 1, "fulfilled": 1 })
-
-// Transactions - Query by sender or receiver
-db.transactions.createIndex({ "from_center_id": 1, "to_center_id": 1 })
-```
 ---
 
 ## 🤝 Contributing
