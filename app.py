@@ -8,39 +8,11 @@ import time
 
 # Configure page
 st.set_page_config(
-    page_title="Helpkart - Distribution Center Management",
+    page_title="Helpkart",
     page_icon="🏥",
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-
-# Custom CSS
-st.markdown("""
-<style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #1f5a96;
-        margin-bottom: 1rem;
-    }
-    .status-card {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
-    }
-    .status-critical {
-        border-left: 4px solid #ef4444;
-    }
-    .status-surplus {
-        border-left: 4px solid #10b981;
-    }
-    .status-normal {
-        border-left: 4px solid #3b82f6;
-    }
-</style>
-""", unsafe_allow_html=True)
 
 
 # Initialize session state
@@ -55,11 +27,9 @@ with st.container(height=1, border=False):
 
 def try_auto_login_from_cookie():
     """Auto-login from cookies if available"""
-    # If already logged in, nothing to do
     if st.session_state.get("logged_in"):
         return
 
-    # Small delay to let cookie component initialize
     time.sleep(0.5)
     
     try:
@@ -83,22 +53,18 @@ def try_auto_login_from_cookie():
         if not center:
             return
 
-        # Rehydrate session_state
         st.session_state.logged_in = True
         st.session_state.center_id = str(center["_id"])
         st.session_state.center_name = center["center_name"]
         st.session_state.center_email = center["email"]
         
     except Exception as e:
-        # Silently fail - cookies might not be ready yet
         pass
 
 
-# Call auto-login
 try_auto_login_from_cookie()
 
 
-# Logout function
 def logout():
     controller = get_cookie_controller()
     controller.remove(f"{COOKIE_PREFIX}_center_id")
@@ -114,96 +80,170 @@ def logout():
 
 # Main app
 if not st.session_state.logged_in:
+    # LOGIN PAGE - ONLY THIS PAGE HAS STYLING
+    st.markdown("""
+    <style>
+        .login-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+        
+        .login-header {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #0066CC;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .login-subheader {
+            text-align: center;
+            color: #666;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .login-form {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid #E0E0E0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #1A1A1A;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .smile-labs-footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: #999;
+            font-size: 0.9rem;
+            margin-top: 3rem;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
     # Show login/signup page
-    tab1, tab2 = st.tabs(["Login", "Sign Up"])
+    tab1, tab2 = st.tabs(["🔐 Login", "📝 Sign Up"])
     
     with tab1:
-        st.markdown('<div class="main-header">Helpkart Login</div>', unsafe_allow_html=True)
+        st.markdown('<div class="login-container">', unsafe_allow_html=True)
+        st.markdown('<div class="login-header">🏥 Helpkart</div>', unsafe_allow_html=True)
+        st.markdown('<div class="login-subheader">Distribution Center Management</div>', unsafe_allow_html=True)
+
         
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            email = st.text_input("Email Address", key="login_email")
-            password = st.text_input("Password", type="password", key="login_password")
-            
-            if st.button("Login", use_container_width=True, key="login_btn"):
-                if email and password:
+        email = st.text_input("Email Address", key="login_email", placeholder="your@email.com")
+        password = st.text_input("Password", type="password", key="login_password", placeholder="Enter your password")
+        
+        if st.button("🚀 Login", use_container_width=True, key="login_btn"):
+            if email and password:
+                db = get_database()
+                if db is not None:
+                    users = db["centers"]
+                    user = users.find_one({"email": email})
+                    
+                    if user and verify_password(password, user["password"]):
+                        st.session_state.logged_in = True
+                        st.session_state.center_id = str(user["_id"])
+                        st.session_state.center_name = user["center_name"]
+                        st.session_state.center_email = user["email"]
+                        st.session_state.page = 'dashboard'
+
+                        controller.set(f"{COOKIE_PREFIX}_center_id", str(user["_id"]), max_age=7 * 24 * 60 * 60)
+                        controller.set(f"{COOKIE_PREFIX}_email", user["email"], max_age=7 * 24 * 60 * 60)
+
+                        st.success("✅ Login successful! Redirecting...")
+                        time.sleep(0.5)
+                        st.rerun()
+                    else:
+                        st.error("❌ Invalid email or password")
+            else:
+                st.warning("⚠️ Please fill in all fields")
+        
+        st.markdown('</div></div>', unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div class="smile-labs-footer">
+            <p>Built with ❤️ by <strong>SMILE LABS</strong></p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with tab2:
+        st.markdown('<div class="login-container">', unsafe_allow_html=True)
+        st.markdown('<div class="login-header">📋 Create Account</div>', unsafe_allow_html=True)
+        st.markdown('<div class="login-subheader">Join Helpkart today</div>', unsafe_allow_html=True)
+        st.markdown('<div class="login-form">', unsafe_allow_html=True)
+        
+        center_name = st.text_input("Center Name", placeholder="Enter center name")
+        email = st.text_input("Email Address", key="signup_email", placeholder="your@email.com")
+        phone = st.text_input("Phone Number", placeholder="+91 XXXXX XXXXX")
+        address = st.text_area("Address/Location", placeholder="Enter your center address", height=100)
+        
+        col_lat, col_lng = st.columns(2)
+        with col_lat:
+            latitude = st.number_input("Latitude", format="%.6f", value=0.0)
+        with col_lng:
+            longitude = st.number_input("Longitude", format="%.6f", value=0.0)
+        
+        password = st.text_input("Password", type="password", key="signup_password", placeholder="At least 6 characters")
+        confirm_password = st.text_input("Confirm Password", type="password", key="confirm_password", placeholder="Re-enter password")
+        
+        if st.button("✨ Create Account", use_container_width=True, key="signup_btn"):
+            if all([center_name, email, phone, address, password, confirm_password]):
+                if password != confirm_password:
+                    st.error("❌ Passwords don't match")
+                elif len(password) < 6:
+                    st.error("❌ Password must be at least 6 characters")
+                else:
                     db = get_database()
                     if db is not None:
                         users = db["centers"]
-                        user = users.find_one({"email": email})
                         
-                        if user and verify_password(password, user["password"]):
-                            st.session_state.logged_in = True
-                            st.session_state.center_id = str(user["_id"])
-                            st.session_state.center_name = user["center_name"]
-                            st.session_state.center_email = user["email"]
-                            st.session_state.page = 'dashboard'
-
-                            # Set cookies with 7-day expiry
-                            controller.set(f"{COOKIE_PREFIX}_center_id", str(user["_id"]), max_age=7 * 24 * 60 * 60)
-                            controller.set(f"{COOKIE_PREFIX}_email", user["email"], max_age=7 * 24 * 60 * 60)
-
-                            st.success("Login successful! Redirecting...")
-                            time.sleep(0.5)  # Wait for cookies to sync
-                            st.rerun()
+                        if users.find_one({"email": email}):
+                            st.error("❌ Email already registered")
                         else:
-                            st.error("Invalid email or password")
-                else:
-                    st.warning("Please fill in all fields")
-    
-    with tab2:
-        st.markdown('<div class="main-header">Create New Center Account</div>', unsafe_allow_html=True)
-        
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            center_name = st.text_input("Center Name")
-            email = st.text_input("Email Address", key="signup_email")
-            phone = st.text_input("Phone Number")
-            address = st.text_area("Address/Location")
-            latitude = st.number_input("Latitude", format="%.6f")
-            longitude = st.number_input("Longitude", format="%.6f")
-            password = st.text_input("Password", type="password", key="signup_password")
-            confirm_password = st.text_input("Confirm Password", type="password", key="confirm_password")
-            
-            if st.button("Sign Up", use_container_width=True, key="signup_btn"):
-                if all([center_name, email, phone, address, password, confirm_password]):
-                    if password != confirm_password:
-                        st.error("Passwords don't match")
-                    elif len(password) < 6:
-                        st.error("Password must be at least 6 characters")
-                    else:
-                        db = get_database()
-                        if db is not None:
-                            users = db["centers"]
+                            center_data = {
+                                "center_id": str(uuid.uuid4()),
+                                "center_name": center_name,
+                                "email": email,
+                                "password": hash_password(password),
+                                "phone": phone,
+                                "address": address,
+                                "location_coordinates": {
+                                    "lat": latitude,
+                                    "lng": longitude
+                                },
+                                "status": "active",
+                                "created_at": datetime.now(),
+                                "updated_at": datetime.now()
+                            }
                             
-                            # Check if email already exists
-                            if users.find_one({"email": email}):
-                                st.error("Email already registered")
-                            else:
-                                # Create new center
-                                center_data = {
-                                    "center_id": str(uuid.uuid4()),
-                                    "center_name": center_name,
-                                    "email": email,
-                                    "password": hash_password(password),
-                                    "phone": phone,
-                                    "address": address,
-                                    "location_coordinates": {
-                                        "lat": latitude,
-                                        "lng": longitude
-                                    },
-                                    "status": "active",
-                                    "created_at": datetime.now(),
-                                    "updated_at": datetime.now()
-                                }
-                                
-                                result = users.insert_one(center_data)
-                                st.success("Account created successfully! Please login.")
-                                st.info("Redirecting to login page...")
-
+                            result = users.insert_one(center_data)
+                            st.success("✅ Account created successfully!")
+                            st.info("📲 Redirecting to login page...")
+            else:
+                st.warning("⚠️ Please fill in all fields")
+        
+        st.markdown('</div></div>', unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div class="smile-labs-footer">
+            <p>Built with ❤️ by <strong>SMILE LABS</strong></p>
+        </div>
+        """, unsafe_allow_html=True)
 
 else:
-    # Sidebar navigation
+    # LOGGED IN - NO STYLING CHANGES, KEEP ORIGINAL
     with st.sidebar:
         st.markdown(f"### 👋 Welcome, {st.session_state.center_name}!")
         st.divider()
